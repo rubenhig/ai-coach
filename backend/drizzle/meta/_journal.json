@@ -15,6 +15,13 @@
       "when": 1775251814060,
       "tag": "0001_mean_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743764400000,
+      "tag": "0002_normalize_activities",
+      "breakpoints": true
     }
   ]
 }

@@ -4,11 +4,11 @@ import {
   text,
   timestamp,
   integer,
-  bigint,
   boolean,
   doublePrecision,
   jsonb,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -34,16 +34,15 @@ export const activities = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
 
-    // Identificadores Strava
-    stravaId: bigint('strava_id', { mode: 'number' }).notNull().unique(),
-    externalId: text('external_id'),
-    uploadId: bigint('upload_id', { mode: 'number' }),
+    // Proveedor
+    source: text('source').notNull().default('strava'), // 'strava' | 'polar' | 'fit' | 'gpx'
+    providerActivityId: text('provider_activity_id').notNull(),
+    externalId: text('external_id'), // ID del dispositivo origen (útil para dedup FIT)
 
     // Info básica
     name: text('name').notNull(),
     type: text('type').notNull(),       // "Run", "Ride", etc.
     sportType: text('sport_type').notNull(), // "TrailRun", "MountainBikeRide", etc.
-    workoutType: integer('workout_type'),
 
     // Tiempos
     startDate: timestamp('start_date', { withTimezone: true }).notNull(),
@@ -91,8 +90,6 @@ export const activities = pgTable(
     manual: boolean('manual').default(false),
     gearId: text('gear_id'),
     deviceName: text('device_name'),
-    sufferScore: integer('suffer_score'),
-    prCount: integer('pr_count').default(0),
     calories: doublePrecision('calories'),
 
     // JSON completo de Strava (para no perder nada)
@@ -105,6 +102,7 @@ export const activities = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (t) => [
+    uniqueIndex('activities_provider_unique_idx').on(t.source, t.providerActivityId),
     index('activities_user_id_idx').on(t.userId),
     index('activities_start_date_idx').on(t.startDate),
     index('activities_type_idx').on(t.type),

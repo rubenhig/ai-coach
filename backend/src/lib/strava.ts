@@ -68,39 +68,40 @@ export type StravaActivity = {
   name: string
   type: string
   sport_type: string
-  workout_type: number | null
-  external_id: string | null
-  upload_id: number | null
+  external_id?: string | null
   start_date: string
   start_date_local: string
-  timezone: string
-  utc_offset: number
-  distance: number
-  total_elevation_gain: number
-  moving_time: number
-  elapsed_time: number
-  average_speed: number
-  max_speed: number
-  average_cadence: number | null
-  average_watts: number | null
-  weighted_average_watts: number | null
-  max_watts: number | null
-  kilojoules: number | null
-  device_watts: boolean
-  has_heartrate: boolean
-  average_heartrate: number | null
-  max_heartrate: number | null
-  trainer: boolean
-  commute: boolean
-  manual: boolean
-  gear_id: string | null
-  device_name: string | null
-  suffer_score: number | null
-  pr_count: number
-  map: {
-    summary_polyline: string | null
-  }
-  start_latlng: [number, number] | null
+  timezone?: string | null
+  utc_offset?: number | null
+  distance?: number | null
+  total_elevation_gain?: number | null
+  elev_high?: number | null
+  elev_low?: number | null
+  moving_time?: number | null
+  elapsed_time?: number | null
+  average_speed?: number | null
+  max_speed?: number | null
+  average_cadence?: number | null
+  average_watts?: number | null
+  weighted_average_watts?: number | null
+  max_watts?: number | null
+  kilojoules?: number | null
+  device_watts?: boolean | null
+  has_heartrate?: boolean | null
+  average_heartrate?: number | null
+  max_heartrate?: number | null
+  trainer?: boolean | null
+  commute?: boolean | null
+  manual?: boolean | null
+  gear_id?: string | null
+  device_name?: string | null
+  map?: { summary_polyline?: string | null } | null
+  start_latlng?: [number, number] | null
+  // Strava-specific (sólo en rawData)
+  workout_type?: number | null
+  upload_id?: number | null
+  suffer_score?: number | null
+  pr_count?: number | null
 }
 
 export async function fetchActivitiesPage(

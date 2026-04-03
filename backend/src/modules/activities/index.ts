@@ -29,7 +29,8 @@ activitiesRouter.get('/', async (c) => {
   const rows = await db
     .select({
       id: activities.id,
-      stravaId: activities.stravaId,
+      source: activities.source,
+      providerActivityId: activities.providerActivityId,
       name: activities.name,
       type: activities.type,
       sportType: activities.sportType,
@@ -45,8 +46,6 @@ activitiesRouter.get('/', async (c) => {
       averageHeartrate: activities.averageHeartrate,
       maxHeartrate: activities.maxHeartrate,
       averageCadence: activities.averageCadence,
-      sufferScore: activities.sufferScore,
-      prCount: activities.prCount,
       trainer: activities.trainer,
       commute: activities.commute,
       summaryPolyline: activities.summaryPolyline,

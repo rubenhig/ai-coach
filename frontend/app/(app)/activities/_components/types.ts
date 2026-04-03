@@ -2,7 +2,8 @@ export type ActivityType = string
 
 export type Activity = {
   id: number
-  stravaId: number
+  source: string
+  providerActivityId: string
   name: string
   type: ActivityType
   sportType: string
@@ -18,8 +19,6 @@ export type Activity = {
   averageHeartrate: number | null
   maxHeartrate: number | null
   averageCadence: number | null
-  sufferScore: number | null
-  prCount: number | null
   trainer: boolean | null
   commute: boolean | null
   summaryPolyline: string | null
