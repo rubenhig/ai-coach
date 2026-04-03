@@ -4,10 +4,12 @@ import { cors } from 'hono/cors'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
 import auth from './modules/auth/index.js'
+import activitiesRouter from './modules/activities/index.js'
 import logger from './lib/logger.js'
 import { env } from './lib/env.js'
 
-const app = new Hono()
+type AppVariables = { userId: number }
+const app = new Hono<{ Variables: AppVariables }>()
 
 // Middleware de Logs con Pino (reemplaza hono/logger)
 app.use('*', async (c, next) => {
@@ -46,6 +48,7 @@ app.use('/api/*', async (c, next) => {
 
 // Rutas protegidas
 app.route('/api/auth', auth)
+app.route('/api/activities', activitiesRouter)
 
 serve({ fetch: app.fetch, port: env.PORT })
 

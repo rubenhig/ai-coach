@@ -6,8 +6,10 @@ import { users } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
 import logger from '../../lib/logger.js'
 import { env } from '../../lib/env.js'
+import { syncUser } from '../sync/service.js'
 
-const auth = new Hono()
+type AuthVariables = { userId: number }
+const auth = new Hono<{ Variables: AuthVariables }>()
 
 // --- Schemas ---
 
@@ -115,6 +117,11 @@ auth.get('/strava/callback', async (c) => {
       },
     })
     .returning()
+
+  // Sync en background — no bloqueamos el redirect al usuario
+  syncUser(user.id).catch((err) =>
+    logger.error({ userId: user.id, err }, 'background strava sync failed')
+  )
 
   // Generamos un código de intercambio de un solo uso (el JWT nunca va en la URL)
   const exchangeCode = crypto.randomUUID()

@@ -57,7 +57,7 @@ export default function AppSidebar({ user }: AppSidebarProps) {
               {navItems.map(({ href, label, icon: Icon }) => (
                 <SidebarMenuItem key={href}>
                   <SidebarMenuButton
-                    render={<Link href={href} />}
+                    render={(props) => <Link href={href} {...props} />}
                     isActive={pathname === href}
                     tooltip={label}
                     className="flex items-center gap-2 w-full"
