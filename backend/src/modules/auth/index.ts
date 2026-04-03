@@ -1,24 +1,31 @@
 import { Hono } from 'hono'
 import { sign } from 'hono/jwt'
+import { z } from 'zod'
 import { db } from '../../db/index.js'
 import { users } from '../../db/schema.js'
 import { eq } from 'drizzle-orm'
+import logger from '../../lib/logger.js'
+import { env } from '../../lib/env.js'
 
 const auth = new Hono()
 
-// --- Tipos ---
+// --- Schemas ---
 
-type StravaTokenResponse = {
-  access_token: string
-  refresh_token: string
-  expires_at: number
-  athlete: {
-    id: number
-    firstname: string
-    lastname: string
-    profile_medium: string
-  }
-}
+const StravaTokenSchema = z.object({
+  access_token: z.string(),
+  refresh_token: z.string(),
+  expires_at: z.number(),
+  athlete: z.object({
+    id: z.number(),
+    firstname: z.string(),
+    lastname: z.string(),
+    profile_medium: z.string(),
+  }),
+})
+
+const ExchangeBodySchema = z.object({
+  code: z.string().uuid(),
+})
 
 // --- Códigos de intercambio (en memoria, TTL 60s) ---
 // El JWT nunca viaja en la URL. En su lugar usamos un código de un solo uso.
@@ -37,15 +44,14 @@ setInterval(() => {
 
 const STRAVA_AUTH_URL = 'https://www.strava.com/oauth/authorize'
 const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token'
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000'
+const { FRONTEND_URL, BACKEND_URL, STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, SESSION_SECRET } = env
 
 // --- Rutas públicas ---
 
 // Inicia el flujo OAuth con Strava
 auth.get('/strava', (c) => {
   const params = new URLSearchParams({
-    client_id: process.env.STRAVA_CLIENT_ID!,
+    client_id: STRAVA_CLIENT_ID,
     redirect_uri: `${BACKEND_URL}/auth/strava/callback`,
     response_type: 'code',
     approval_prompt: 'auto',
@@ -60,6 +66,7 @@ auth.get('/strava/callback', async (c) => {
   const error = c.req.query('error')
 
   if (error || !code) {
+    logger.warn({ error }, 'strava oauth denied or missing code')
     return c.redirect(`${FRONTEND_URL}?error=auth_failed`)
   }
 
@@ -67,18 +74,24 @@ auth.get('/strava/callback', async (c) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      client_id: process.env.STRAVA_CLIENT_ID,
-      client_secret: process.env.STRAVA_CLIENT_SECRET,
+      client_id: STRAVA_CLIENT_ID,
+      client_secret: STRAVA_CLIENT_SECRET,
       code,
       grant_type: 'authorization_code',
     }),
   })
 
   if (!tokenRes.ok) {
+    logger.error({ status: tokenRes.status }, 'strava token exchange failed')
     return c.redirect(`${FRONTEND_URL}?error=token_failed`)
   }
 
-  const tokenData = await tokenRes.json() as StravaTokenResponse
+  const parsed = StravaTokenSchema.safeParse(await tokenRes.json())
+  if (!parsed.success) {
+    logger.error({ error: parsed.error.flatten() }, 'unexpected strava token response shape')
+    return c.redirect(`${FRONTEND_URL}?error=token_failed`)
+  }
+  const tokenData = parsed.data
   const athlete = tokenData.athlete
 
   const [user] = await db
@@ -112,22 +125,24 @@ auth.get('/strava/callback', async (c) => {
 
 // El frontend llama aquí para canjear el código por un JWT
 auth.post('/exchange', async (c) => {
-  const { code } = await c.req.json<{ code: string }>()
+  const body = ExchangeBodySchema.safeParse(await c.req.json())
+  if (!body.success) return c.json({ error: 'Invalid request' }, 400)
 
-  const entry = exchangeCodes.get(code)
+  const entry = exchangeCodes.get(body.data.code)
   if (!entry || entry.expiresAt < Date.now()) {
+    logger.warn({ code: body.data.code }, 'invalid or expired exchange code')
     return c.json({ error: 'Invalid or expired code' }, 401)
   }
 
   // Código de un solo uso — lo eliminamos inmediatamente
-  exchangeCodes.delete(code)
+  exchangeCodes.delete(body.data.code)
 
   const token = await sign(
     {
       sub: String(entry.userId),
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 días
     },
-    process.env.SESSION_SECRET!,
+    SESSION_SECRET,
     'HS256'
   )
 

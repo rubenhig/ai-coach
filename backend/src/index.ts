@@ -1,16 +1,29 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
 import auth from './modules/auth/index.js'
+import logger from './lib/logger.js'
+import { env } from './lib/env.js'
 
 const app = new Hono()
 
-app.use('*', logger())
+// Middleware de Logs con Pino (reemplaza hono/logger)
+app.use('*', async (c, next) => {
+  const start = Date.now()
+  await next()
+  const end = Date.now()
+  const duration = `${end - start}ms`
+  const method = c.req.method
+  const url = c.req.url
+  const status = c.res.status
+
+  logger.info({ method, url, status, duration }, 'http request')
+})
+
 app.use('*', cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: env.FRONTEND_URL,
   credentials: true,
 }))
 
@@ -23,7 +36,7 @@ app.use('/api/*', async (c, next) => {
   const token = getCookie(c, 'session')
   if (!token) return c.json({ error: 'Unauthorized' }, 401)
   try {
-    const payload = await verify(token, process.env.SESSION_SECRET!, 'HS256')
+    const payload = await verify(token, env.SESSION_SECRET, 'HS256')
     c.set('userId', Number(payload.sub))
     await next()
   } catch {
@@ -34,7 +47,6 @@ app.use('/api/*', async (c, next) => {
 // Rutas protegidas
 app.route('/api/auth', auth)
 
-const port = Number(process.env.PORT) || 4000
-console.log(`Backend running on port ${port}`)
+serve({ fetch: app.fetch, port: env.PORT })
 
-serve({ fetch: app.fetch, port })
+logger.info({ port: env.PORT }, 'backend started')
