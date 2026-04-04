@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { eq, desc, and, count } from 'drizzle-orm'
+import { eq, desc, and, count, asc } from 'drizzle-orm'
 import { db } from '../../db/index.js'
-import { activities } from '../../db/schema.js'
+import { activities, activityStreams, activitySplits, activityLaps } from '../../db/schema.js'
 
 type ActivitiesVariables = { userId: number }
 const activitiesRouter = new Hono<{ Variables: ActivitiesVariables }>()
@@ -69,6 +69,39 @@ activitiesRouter.get('/', async (c) => {
       totalPages: Math.ceil(total / perPage),
     },
   })
+})
+
+activitiesRouter.get('/:id', async (c) => {
+  const userId = c.get('userId')
+  const id = Number(c.req.param('id'))
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: 'Invalid id' }, 400)
+  }
+
+  const activity = await db.query.activities.findFirst({
+    where: and(eq(activities.id, id), eq(activities.userId, userId)),
+  })
+
+  if (!activity) return c.json({ error: 'Not found' }, 404)
+
+  const [streams, splits, laps] = await Promise.all([
+    db.query.activityStreams.findFirst({
+      where: eq(activityStreams.activityId, id),
+    }),
+    db
+      .select()
+      .from(activitySplits)
+      .where(eq(activitySplits.activityId, id))
+      .orderBy(asc(activitySplits.splitIndex)),
+    db
+      .select()
+      .from(activityLaps)
+      .where(eq(activityLaps.activityId, id))
+      .orderBy(asc(activityLaps.lapIndex)),
+  ])
+
+  return c.json({ activity, streams: streams ?? null, splits, laps })
 })
 
 export default activitiesRouter
