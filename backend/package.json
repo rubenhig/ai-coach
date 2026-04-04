@@ -16,6 +16,8 @@
   "type": "module",
   "dependencies": {
     "@hono/node-server": "^1.19.12",
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-openapi": "^1.2.4",
     "bullmq": "^5.73.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",

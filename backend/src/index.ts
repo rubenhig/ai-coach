@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
-import { Hono } from 'hono'
+import { OpenAPIHono } from '@hono/zod-openapi'
+import { swaggerUI } from '@hono/swagger-ui'
 import { cors } from 'hono/cors'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
@@ -11,7 +12,7 @@ import logger from './lib/logger.js'
 import { env } from './lib/env.js'
 
 type AppVariables = { userId: number }
-const app = new Hono<{ Variables: AppVariables }>()
+const app = new OpenAPIHono<{ Variables: AppVariables }>()
 
 // Middleware de Logs con Pino (reemplaza hono/logger)
 app.use('*', async (c, next) => {
@@ -51,6 +52,13 @@ app.use('/api/*', async (c, next) => {
 // Rutas protegidas
 app.route('/api/auth', auth)
 app.route('/api/activities', activitiesRouter)
+
+// OpenAPI + Swagger UI (solo desarrollo)
+app.doc('/openapi.json', {
+  openapi: '3.0.0',
+  info: { title: 'GPTrainer API', version: '1.0.0' },
+})
+app.get('/docs', swaggerUI({ url: '/openapi.json' }))
 
 serve({ fetch: app.fetch, port: env.PORT })
 logger.info({ port: env.PORT }, 'backend started')
