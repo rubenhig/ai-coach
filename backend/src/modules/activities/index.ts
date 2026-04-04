@@ -51,7 +51,8 @@ activitiesRouter.get('/', async (c) => {
       summaryPolyline: activities.summaryPolyline,
       startLat: activities.startLat,
       startLng: activities.startLng,
-      detailFetched: activities.detailFetched,
+      detailFetchedAt: activities.detailFetchedAt,
+      streamsFetchedAt: activities.streamsFetchedAt,
     })
     .from(activities)
     .where(and(...filters))

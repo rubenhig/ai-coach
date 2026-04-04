@@ -63,11 +63,13 @@ export async function getValidToken(userId: number): Promise<string> {
 
 // --- Activity fetching ---
 
+// Respuesta de GET /athlete/activities
 export type StravaActivity = {
   id: number
   name: string
   type: string
   sport_type: string
+  workout_type?: number | null
   external_id?: string | null
   start_date: string
   start_date_local: string
@@ -95,13 +97,68 @@ export type StravaActivity = {
   manual?: boolean | null
   gear_id?: string | null
   device_name?: string | null
-  map?: { summary_polyline?: string | null } | null
+  map?: { summary_polyline?: string | null; polyline?: string | null } | null
   start_latlng?: [number, number] | null
-  // Strava-specific (sólo en rawData)
-  workout_type?: number | null
+  end_latlng?: [number, number] | null
+  // Solo en rawData
   upload_id?: number | null
   suffer_score?: number | null
   pr_count?: number | null
+}
+
+// Campos adicionales que añade GET /activities/{id}
+export type StravaActivityDetail = StravaActivity & {
+  description?: string | null
+  calories?: number | null
+  average_temp?: number | null
+  splits_metric?: StravaSplit[]
+  laps?: StravaLap[]
+}
+
+export type StravaSplit = {
+  split: number
+  distance: number
+  moving_time: number
+  elapsed_time: number
+  elevation_difference: number
+  average_speed: number
+  pace_zone: number
+}
+
+export type StravaLap = {
+  id: number
+  name?: string | null
+  lap_index: number
+  elapsed_time: number
+  moving_time: number
+  start_date: string
+  distance: number
+  total_elevation_gain?: number | null
+  average_speed?: number | null
+  max_speed?: number | null
+  average_cadence?: number | null
+  average_watts?: number | null
+  device_watts?: boolean | null
+  start_index?: number | null
+  end_index?: number | null
+}
+
+// Respuesta de GET /activities/{id}/streams
+export type StravaStreamSet = {
+  [key: string]: {
+    type: string
+    data: unknown[]
+    series_type: string
+    original_size: number
+    resolution: string
+  }
+}
+
+// Respuesta de GET /athlete/zones
+export type StravaZone = {
+  type: string
+  distribution_buckets: { min: number; max: number; time: number }[]
+  sensor_based: boolean
 }
 
 export async function fetchActivitiesPage(
@@ -128,9 +185,9 @@ export async function fetchActivitiesPage(
 
 export async function fetchActivityDetail(
   token: string,
-  stravaId: number
-): Promise<Record<string, unknown>> {
-  const res = await fetch(`${STRAVA_API_URL}/activities/${stravaId}`, {
+  providerActivityId: string
+): Promise<StravaActivityDetail> {
+  const res = await fetch(`${STRAVA_API_URL}/activities/${providerActivityId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
 
@@ -139,5 +196,46 @@ export async function fetchActivityDetail(
     throw new Error(`Strava activity detail fetch failed: ${res.status} ${body}`)
   }
 
-  return res.json() as Promise<Record<string, unknown>>
+  return res.json() as Promise<StravaActivityDetail>
+}
+
+export async function fetchActivityStreams(
+  token: string,
+  providerActivityId: string
+): Promise<StravaStreamSet> {
+  const keys = [
+    'time', 'distance', 'latlng', 'altitude', 'velocity_smooth',
+    'heartrate', 'cadence', 'watts', 'temp', 'moving', 'grade_smooth',
+  ].join(',')
+
+  const res = await fetch(
+    `${STRAVA_API_URL}/activities/${providerActivityId}/streams?keys=${keys}&key_by_type=true`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Strava streams fetch failed: ${res.status} ${body}`)
+  }
+
+  return res.json() as Promise<StravaStreamSet>
+}
+
+export async function fetchAthleteZones(token: string): Promise<StravaZone[]> {
+  const res = await fetch(`${STRAVA_API_URL}/athlete/zones`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Strava athlete zones fetch failed: ${res.status} ${body}`)
+  }
+
+  const data = await res.json() as { heart_rate?: StravaZone; power?: StravaZone }
+
+  // La API devuelve { heart_rate: {...}, power: {...} } — normalizamos a array
+  const zones: StravaZone[] = []
+  if (data.heart_rate) zones.push({ ...data.heart_rate, type: 'heartrate' })
+  if (data.power) zones.push({ ...data.power, type: 'power' })
+  return zones
 }
