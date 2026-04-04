@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { TrendingUp, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getTypeConfig, formatDate, formatDistance, formatPace, formatSwimPace, formatTime } from './activity-config'
@@ -8,7 +9,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
   const Icon = config.icon
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors rounded-lg cursor-pointer group">
+    <Link href={`/activities/${activity.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors rounded-lg cursor-pointer group">
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-muted ${config.color}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -76,7 +77,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 

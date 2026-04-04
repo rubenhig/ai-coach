@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Clock, Heart, TrendingUp, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,6 +10,7 @@ function ActivityCard({ activity }: { activity: Activity }) {
   const Icon = config.icon
 
   return (
+    <Link href={`/activities/${activity.id}`}>
     <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer p-0">
       <div className={`bg-gradient-to-br ${config.gradient} px-4 pt-4 pb-3`}>
         <div className="flex items-start justify-between gap-2 mb-1">
@@ -95,6 +97,7 @@ function ActivityCard({ activity }: { activity: Activity }) {
         </div>
       </CardContent>
     </Card>
+    </Link>
   )
 }
 
