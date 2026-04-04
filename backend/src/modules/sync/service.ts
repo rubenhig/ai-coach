@@ -3,6 +3,8 @@ import { db } from '../../db/index.js'
 import { users, activities } from '../../db/schema.js'
 import { getValidToken, fetchActivitiesPage } from '../../lib/strava.js'
 import { normalizeStravaActivity } from './providers/strava.js'
+import { enrichActivities } from './enrichment.js'
+import { syncAthleteZones } from './zones.js'
 import logger from '../../lib/logger.js'
 
 export async function syncUser(userId: number): Promise<void> {
@@ -65,4 +67,12 @@ export async function syncUser(userId: number): Promise<void> {
     .where(eq(users.id, userId))
 
   logger.info({ userId, totalSynced }, 'strava sync completed')
+
+  // Enriquecimiento en background — no bloquea el login
+  enrichActivities(userId).catch((err) =>
+    logger.error({ userId, err }, 'background enrichment failed')
+  )
+  syncAthleteZones(userId).catch((err) =>
+    logger.error({ userId, err }, 'background zones sync failed')
+  )
 }
