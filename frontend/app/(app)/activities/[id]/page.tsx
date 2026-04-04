@@ -6,6 +6,7 @@ import { ActivityMap } from './_components/activity-map'
 import { ActivityChart } from './_components/activity-chart'
 import { ActivitySplitsTable } from './_components/activity-splits-table'
 import { ActivityLapsTable } from './_components/activity-laps-table'
+import { ActivityEnrichmentStatus } from './_components/activity-enrichment-status'
 import { decodePolyline } from './_components/polyline'
 import type { ActivityDetail } from '../_components/types'
 
@@ -54,10 +55,8 @@ export default async function ActivityDetailPage({
 
       {hasChart && <ActivityChart streams={streams!} activity={activity} />}
 
-      {!activity.detailFetchedAt && (
-        <p className="text-xs text-muted-foreground text-center py-2">
-          Datos de detalle pendientes de sincronización (splits, laps y gráficos disponibles pronto)
-        </p>
+      {(!activity.detailFetchedAt || !activity.streamsFetchedAt) && (
+        <ActivityEnrichmentStatus activityId={activity.id} />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

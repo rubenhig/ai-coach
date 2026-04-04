@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { eq, desc, and, count, asc } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { activities, activityStreams, activitySplits, activityLaps } from '../../db/schema.js'
+import { enrichmentQueue } from '../../queue/index.js'
+import { enqueueRequested } from '../../queue/enrichment-producer.js'
 
 type ActivitiesVariables = { userId: number }
 const activitiesRouter = new Hono<{ Variables: ActivitiesVariables }>()
@@ -69,6 +71,40 @@ activitiesRouter.get('/', async (c) => {
       totalPages: Math.ceil(total / perPage),
     },
   })
+})
+
+activitiesRouter.get('/:id/status', async (c) => {
+  const userId = c.get('userId')
+  const id = Number(c.req.param('id'))
+  if (!Number.isInteger(id) || id <= 0) return c.json({ error: 'Invalid id' }, 400)
+
+  const activity = await db.query.activities.findFirst({
+    where: and(eq(activities.id, id), eq(activities.userId, userId)),
+    columns: { detailFetchedAt: true, streamsFetchedAt: true },
+  })
+  if (!activity) return c.json({ error: 'Not found' }, 404)
+
+  const enriched = activity.detailFetchedAt !== null && activity.streamsFetchedAt !== null
+  if (enriched) return c.json({ enriched: true, position: null, etaSeconds: null })
+
+  const jobId = `activity-${id}`
+  const existing = await enrichmentQueue.getJob(jobId)
+  const state = existing ? await existing.getState() : null
+
+  if (!existing || state === 'failed') {
+    // No está en cola, o falló permanentemente — re-encolamos
+    if (existing) await existing.remove()
+    await enqueueRequested(id)
+  } else if (state === 'waiting' || state === 'delayed') {
+    // Está en background — la promovemos a requested
+    await existing.changePriority({ priority: 1 })
+  }
+  // Si state === 'active', ya se está procesando, no hacemos nada
+
+  const waitingCount = await enrichmentQueue.getWaitingCount()
+  const etaSeconds = state === 'active' ? 5 : Math.max(5, waitingCount * 3)
+
+  return c.json({ enriched: false, position: waitingCount, etaSeconds })
 })
 
 activitiesRouter.get('/:id', async (c) => {

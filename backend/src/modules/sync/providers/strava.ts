@@ -151,8 +151,8 @@ export function normalizeStravaZones(zones: StravaZone[], userId: number): Athle
   return zones.map((z) => ({
     userId,
     type: z.type,
-    zones: z.distribution_buckets as unknown as Record<string, unknown>,
-    sensorBased: z.sensor_based,
+    zones: z.zones as unknown as Record<string, unknown>,
+    sensorBased: z.sensorBased ?? null,
     fetchedAt: new Date(),
   }))
 }

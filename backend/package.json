@@ -16,6 +16,7 @@
   "type": "module",
   "dependencies": {
     "@hono/node-server": "^1.19.12",
+    "bullmq": "^5.73.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",
     "pino": "^10.3.1",

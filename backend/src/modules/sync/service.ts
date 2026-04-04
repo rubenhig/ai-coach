@@ -1,10 +1,10 @@
-import { eq } from 'drizzle-orm'
+import { eq, isNull, or, and, desc } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { users, activities } from '../../db/schema.js'
 import { getValidToken, fetchActivitiesPage } from '../../lib/strava.js'
 import { normalizeStravaActivity } from './providers/strava.js'
-import { enrichActivities } from './enrichment.js'
 import { syncAthleteZones } from './zones.js'
+import { enqueueBackground } from '../../queue/enrichment-producer.js'
 import logger from '../../lib/logger.js'
 
 export async function syncUser(userId: number): Promise<void> {
@@ -68,10 +68,18 @@ export async function syncUser(userId: number): Promise<void> {
 
   logger.info({ userId, totalSynced }, 'strava sync completed')
 
-  // Enriquecimiento en background — no bloquea el login
-  enrichActivities(userId).catch((err) =>
-    logger.error({ userId, err }, 'background enrichment failed')
-  )
+  // Encolar actividades pendientes de enriquecer (más reciente primero)
+  const pending = await db
+    .select({ id: activities.id })
+    .from(activities)
+    .where(and(eq(activities.userId, userId), or(isNull(activities.detailFetchedAt), isNull(activities.streamsFetchedAt))))
+    .orderBy(desc(activities.startDate))
+
+  if (pending.length > 0) {
+    await enqueueBackground(pending.map((a) => a.id))
+    logger.info({ userId, count: pending.length }, 'enrichment jobs enqueued')
+  }
+
   syncAthleteZones(userId).catch((err) =>
     logger.error({ userId, err }, 'background zones sync failed')
   )

@@ -155,10 +155,14 @@ export type StravaStreamSet = {
 }
 
 // Respuesta de GET /athlete/zones
+type StravaZoneRange = { min: number; max: number; time?: number }
+type StravaHeartRateZones = { custom_zones: boolean; zones: StravaZoneRange[] }
+type StravaZonesResponse = { heart_rate?: StravaHeartRateZones; power?: { zones: StravaZoneRange[] } }
+
 export type StravaZone = {
   type: string
-  distribution_buckets: { min: number; max: number; time: number }[]
-  sensor_based: boolean
+  zones: StravaZoneRange[]
+  sensorBased?: boolean
 }
 
 export async function fetchActivitiesPage(
@@ -231,11 +235,15 @@ export async function fetchAthleteZones(token: string): Promise<StravaZone[]> {
     throw new Error(`Strava athlete zones fetch failed: ${res.status} ${body}`)
   }
 
-  const data = await res.json() as { heart_rate?: StravaZone; power?: StravaZone }
+  const data = await res.json() as StravaZonesResponse
 
-  // La API devuelve { heart_rate: {...}, power: {...} } — normalizamos a array
-  const zones: StravaZone[] = []
-  if (data.heart_rate) zones.push({ ...data.heart_rate, type: 'heartrate' })
-  if (data.power) zones.push({ ...data.power, type: 'power' })
-  return zones
+  // La API devuelve { heart_rate: { zones: [...] }, power: { zones: [...] } }
+  const result: StravaZone[] = []
+  if (data.heart_rate?.zones?.length) {
+    result.push({ type: 'heartrate', zones: data.heart_rate.zones, sensorBased: !data.heart_rate.custom_zones })
+  }
+  if (data.power?.zones?.length) {
+    result.push({ type: 'power', zones: data.power.zones })
+  }
+  return result
 }

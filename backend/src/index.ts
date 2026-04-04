@@ -5,6 +5,8 @@ import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
 import auth from './modules/auth/index.js'
 import activitiesRouter from './modules/activities/index.js'
+import { startEnrichmentWorker } from './queue/enrichment-worker.js'
+import { startScheduler } from './scheduler/index.js'
 import logger from './lib/logger.js'
 import { env } from './lib/env.js'
 
@@ -51,5 +53,7 @@ app.route('/api/auth', auth)
 app.route('/api/activities', activitiesRouter)
 
 serve({ fetch: app.fetch, port: env.PORT })
-
 logger.info({ port: env.PORT }, 'backend started')
+
+startEnrichmentWorker()
+startScheduler()

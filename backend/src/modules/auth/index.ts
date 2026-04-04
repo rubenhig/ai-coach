@@ -57,7 +57,7 @@ auth.get('/strava', (c) => {
     redirect_uri: `${BACKEND_URL}/auth/strava/callback`,
     response_type: 'code',
     approval_prompt: 'auto',
-    scope: 'read,activity:read_all,activity:write',
+    scope: 'read,activity:read_all,activity:write,profile:read_all',
   })
   return c.redirect(`${STRAVA_AUTH_URL}?${params}`)
 })
