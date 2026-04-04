@@ -222,11 +222,52 @@ export const athleteZones = pgTable(
   ]
 )
 
+// Objetivos de entrenamiento del atleta
+export const goals = pgTable('goals', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  description: text('description').notNull(),    // "Hyrox el 15 de mayo en 1h15"
+  eventDate: timestamp('event_date'),
+  targetTime: text('target_time'),               // "1:15:00"
+  plan: jsonb('plan'),                           // TrainingPlan JSON
+  status: text('status').notNull().default('active'), // 'active' | 'completed' | 'cancelled'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+// Historial de conversación con el coach
+export const coachMessages = pgTable(
+  'coach_messages',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    data: jsonb('data').notNull(), // AgentMessage (role, content, timestamp, ...)
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    index('coach_messages_user_id_idx').on(t.userId),
+  ]
+)
+
 // --- Relations ---
 
 export const usersRelations = relations(users, ({ many }) => ({
   activities: many(activities),
   athleteZones: many(athleteZones),
+  goals: many(goals),
+  coachMessages: many(coachMessages),
+}))
+
+export const goalsRelations = relations(goals, ({ one }) => ({
+  user: one(users, { fields: [goals.userId], references: [users.id] }),
+}))
+
+export const coachMessagesRelations = relations(coachMessages, ({ one }) => ({
+  user: one(users, { fields: [coachMessages.userId], references: [users.id] }),
 }))
 
 export const activitiesRelations = relations(activities, ({ one, many }) => ({

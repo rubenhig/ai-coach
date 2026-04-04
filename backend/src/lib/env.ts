@@ -8,6 +8,7 @@ const envSchema = z.object({
   STRAVA_CLIENT_ID: z.string().min(1),
   STRAVA_CLIENT_SECRET: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
+  OPENROUTER_API_KEY: z.string().min(1),
   PORT: z.coerce.number().optional().default(4000),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).optional().default('info'),
 })

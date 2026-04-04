@@ -20,9 +20,9 @@ import type { AppUser } from '../layout'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-  { href: '/plan', label: 'Plan de Entrenamiento', icon: Calendar },
+  { href: '/coach', label: 'Coach IA', icon: Zap },
   { href: '/activities', label: 'Mis Actividades', icon: Activity },
-  { href: '/routes', label: 'Rutas', icon: Map },
+  { href: '/plan', label: 'Plan de Entrenamiento', icon: Calendar },
 ]
 
 type AppSidebarProps = {

@@ -8,6 +8,7 @@ import type { Context, Next } from 'hono'
 import auth from './modules/auth/index.js'
 import activitiesRouter from './modules/activities/index.js'
 import profileRouter from './modules/profile/index.js'
+import coachRouter from './modules/coach/index.js'
 import { startEnrichmentWorker } from './queue/enrichment-worker.js'
 import { startScheduler } from './scheduler/index.js'
 import logger from './lib/logger.js'
@@ -55,6 +56,7 @@ app.use('/api/*', async (c: Context<{ Variables: AppVariables }>, next: Next) =>
 app.route('/api/auth', auth)
 app.route('/api/activities', activitiesRouter)
 app.route('/api/profile', profileRouter)
+app.route('/api/coach', coachRouter)
 
 // OpenAPI + Swagger UI (solo desarrollo)
 app.doc('/openapi.json', {
