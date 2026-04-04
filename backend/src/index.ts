@@ -4,8 +4,10 @@ import { swaggerUI } from '@hono/swagger-ui'
 import { cors } from 'hono/cors'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
+import type { Context, Next } from 'hono'
 import auth from './modules/auth/index.js'
 import activitiesRouter from './modules/activities/index.js'
+import profileRouter from './modules/profile/index.js'
 import { startEnrichmentWorker } from './queue/enrichment-worker.js'
 import { startScheduler } from './scheduler/index.js'
 import logger from './lib/logger.js'
@@ -15,7 +17,7 @@ type AppVariables = { userId: number }
 const app = new OpenAPIHono<{ Variables: AppVariables }>()
 
 // Middleware de Logs con Pino (reemplaza hono/logger)
-app.use('*', async (c, next) => {
+app.use('*', async (c: Context, next: Next) => {
   const start = Date.now()
   await next()
   const end = Date.now()
@@ -33,11 +35,11 @@ app.use('*', cors({
 }))
 
 // Rutas públicas — sin autenticación
-app.get('/health', (c) => c.json({ status: 'ok' }))
+app.get('/health', (c: Context) => c.json({ status: 'ok' }))
 app.route('/auth', auth)
 
 // Middleware de sesión — protege todas las rutas bajo /api/*
-app.use('/api/*', async (c, next) => {
+app.use('/api/*', async (c: Context<{ Variables: AppVariables }>, next: Next) => {
   const token = getCookie(c, 'session')
   if (!token) return c.json({ error: 'Unauthorized' }, 401)
   try {
@@ -52,6 +54,7 @@ app.use('/api/*', async (c, next) => {
 // Rutas protegidas
 app.route('/api/auth', auth)
 app.route('/api/activities', activitiesRouter)
+app.route('/api/profile', profileRouter)
 
 // OpenAPI + Swagger UI (solo desarrollo)
 app.doc('/openapi.json', {

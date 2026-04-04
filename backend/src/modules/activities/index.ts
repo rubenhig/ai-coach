@@ -100,7 +100,7 @@ activitiesRouter.openapi(listRoute, async (c) => {
       streamsFetchedAt: r.streamsFetchedAt?.toISOString() ?? null,
     })),
     meta: { page, perPage, total, totalPages: Math.ceil(total / perPage) },
-  })
+  }, 200 as const)
 })
 
 // --- GET /activities/:id/status ---
@@ -127,10 +127,10 @@ activitiesRouter.openapi(statusRoute, async (c) => {
     where: and(eq(activities.id, id), eq(activities.userId, userId)),
     columns: { detailFetchedAt: true, streamsFetchedAt: true },
   })
-  if (!activity) return c.json({ error: 'Not found' }, 404)
+  if (!activity) return c.json({ error: 'Not found' }, 404 as const)
 
   const enriched = activity.detailFetchedAt !== null && activity.streamsFetchedAt !== null
-  if (enriched) return c.json({ enriched: true, position: null, etaSeconds: null })
+  if (enriched) return c.json({ enriched: true, position: null, etaSeconds: null }, 200 as const)
 
   const jobId = `activity-${id}`
   const existing = await enrichmentQueue.getJob(jobId)
@@ -146,7 +146,7 @@ activitiesRouter.openapi(statusRoute, async (c) => {
   const waitingCount = await enrichmentQueue.getWaitingCount()
   const etaSeconds = state === 'active' ? 5 : Math.max(5, waitingCount * 3)
 
-  return c.json({ enriched: false, position: waitingCount, etaSeconds })
+  return c.json({ enriched: false, position: waitingCount, etaSeconds }, 200 as const)
 })
 
 // --- GET /activities/:id ---
@@ -172,7 +172,7 @@ activitiesRouter.openapi(detailRoute, async (c) => {
   const activity = await db.query.activities.findFirst({
     where: and(eq(activities.id, id), eq(activities.userId, userId)),
   })
-  if (!activity) return c.json({ error: 'Not found' }, 404)
+  if (!activity) return c.json({ error: 'Not found' }, 404 as const)
 
   const [streams, splits, laps] = await Promise.all([
     db.query.activityStreams.findFirst({ where: eq(activityStreams.activityId, id) }),
@@ -194,10 +194,12 @@ activitiesRouter.openapi(detailRoute, async (c) => {
 
   return c.json({
     activity: serialize(activity),
-    streams: streams ?? null,
+    streams: streams
+      ? { ...streams, latlng: streams.latlng as [number, number][] | null }
+      : null,
     splits,
     laps: laps.map(serializeLap),
-  })
+  }, 200 as const)
 })
 
 export default activitiesRouter
