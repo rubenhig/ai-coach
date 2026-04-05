@@ -4,9 +4,6 @@ const backendUrl = process.env.BACKEND_INTERNAL_URL || 'http://localhost:4000'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  experimental: {
-    instrumentationHook: true,
-  },
   async rewrites() {
     return [
       {
