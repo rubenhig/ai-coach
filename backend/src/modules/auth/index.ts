@@ -156,10 +156,6 @@ auth.post('/exchange', async (c) => {
   return c.json({ token })
 })
 
-auth.post('/logout', (c) => {
-  return c.json({ ok: true })
-})
-
 // --- Rutas protegidas (requieren sesión vía middleware en index.ts) ---
 
 auth.get('/me', async (c) => {

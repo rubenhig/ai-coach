@@ -6,6 +6,7 @@ import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
 import type { Context, Next } from 'hono'
 import auth from './modules/auth/index.js'
+import stravaWebhookRouter from './modules/webhooks/strava.js'
 import activitiesRouter from './modules/activities/index.js'
 import profileRouter from './modules/profile/index.js'
 import coachRouter from './modules/coach/index.js'
@@ -38,6 +39,7 @@ app.use('*', cors({
 // Rutas públicas — sin autenticación
 app.get('/health', (c: Context) => c.json({ status: 'ok' }))
 app.route('/auth', auth)
+app.route('/webhooks/strava', stravaWebhookRouter)
 
 // Middleware de sesión — protege todas las rutas bajo /api/*
 app.use('/api/*', async (c: Context<{ Variables: AppVariables }>, next: Next) => {

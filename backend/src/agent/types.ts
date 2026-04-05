@@ -8,7 +8,7 @@ export type PlanSession = {
 export type PlanPhase = {
   name: string    // "Base aeróbica"
   weeks: string   // "Semanas 1-3"
-  focus: string   // Descripción corta del objetivo de la fase
+  focus: string
   sessions: PlanSession[]
 }
 

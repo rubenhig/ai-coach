@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { ViewToggle, type ViewMode } from '@/components/ui/view-toggle'
 import { PaginationNav } from '@/components/ui/pagination-nav'
 import ActivityList from './_components/activity-list'
@@ -19,6 +20,7 @@ async function getActivities(page: number): Promise<ActivitiesResponse> {
     cache: 'no-store',
   })
 
+  if (res.status === 401) redirect('/')
   if (!res.ok) throw new Error('Failed to fetch activities')
   return res.json()
 }

@@ -33,7 +33,8 @@ export default function NavUser({ user }: NavUserProps) {
 
   async function handleLogout() {
     await fetch('/auth/logout', { method: 'POST' })
-    router.replace('/')
+    // Hard redirect — descarga el estado React por completo en lugar de navegar client-side
+    window.location.replace('/')
   }
 
   return (

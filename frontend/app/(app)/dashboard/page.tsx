@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import ProfileHeader from './_components/profile-header'
 import WeekStats from './_components/week-stats'
 import WeeklyVolumeChart from './_components/weekly-volume-chart'
@@ -16,6 +17,7 @@ async function getProfileSummary(): Promise<ProfileSummary> {
     headers: { Cookie: `session=${session?.value}` },
     cache: 'no-store',
   })
+  if (res.status === 401) redirect('/')
   if (!res.ok) throw new Error('Failed to fetch profile summary')
   return res.json()
 }
@@ -29,6 +31,7 @@ async function getRecentActivities(): Promise<ActivitiesResponse> {
     headers: { Cookie: `session=${session?.value}` },
     cache: 'no-store',
   })
+  if (res.status === 401) redirect('/')
   if (!res.ok) throw new Error('Failed to fetch recent activities')
   return res.json()
 }

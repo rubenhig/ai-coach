@@ -33,6 +33,7 @@ services:
       - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - STRAVA_WEBHOOK_VERIFY_TOKEN=${STRAVA_WEBHOOK_VERIFY_TOKEN}
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { ActivityDetailHeader } from './_components/activity-detail-header'
 import { ActivityMetrics } from './_components/activity-metrics'
 import { ActivityMap } from './_components/activity-map'
@@ -20,6 +20,7 @@ async function getActivity(id: number): Promise<ActivityDetail | null> {
     cache: 'no-store',
   })
 
+  if (res.status === 401) redirect('/')
   if (res.status === 404) return null
   if (!res.ok) throw new Error('Failed to fetch activity')
   return res.json()
