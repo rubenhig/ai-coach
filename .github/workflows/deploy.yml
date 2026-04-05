@@ -2,13 +2,19 @@ name: Deploy to production
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -17,6 +23,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/deploy/ai-coach
-            git pull origin main
+            git fetch --tags
+            git checkout ${{ github.ref_name }}
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
             docker image prune -f
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
