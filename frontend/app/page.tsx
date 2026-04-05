@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Activity, Map, MessageSquare, Zap } from 'lucide-react'
+import { Activity, Map, MessageSquare } from 'lucide-react'
+import { DuxLogo } from '@/components/dux-logo'
 
 export default function LandingPage() {
   return (
@@ -10,12 +11,7 @@ export default function LandingPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full blur-[150px] opacity-10 bg-blue-600" />
 
       <nav className="w-full px-6 py-4 flex justify-between items-center z-10 border-b border-border bg-background/50 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold tracking-tight">GPTrainer</span>
-        </div>
+        <DuxLogo size={32} />
         <Link
           href="/auth/login"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"

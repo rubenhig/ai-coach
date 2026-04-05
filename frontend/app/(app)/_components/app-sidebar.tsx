@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, BarChart3, Calendar, Map, Zap } from 'lucide-react'
+import { Activity, BarChart3, Calendar, Zap } from 'lucide-react'
+import { DuxIcon } from '@/components/dux-logo'
 import {
   Sidebar,
   SidebarContent,
@@ -40,11 +41,11 @@ export default function AppSidebar({ user }: AppSidebarProps) {
           href="/dashboard" 
           className="flex items-center gap-2.5 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
         >
-          <div className="w-8 h-8 rounded-md bg-strava flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Zap className="w-5 h-5 text-white fill-white" />
+          <div className="w-8 h-8 rounded-md bg-strava flex items-center justify-center flex-shrink-0 shadow-sm text-white">
+            <DuxIcon size={20} />
           </div>
           <span className="font-bold tracking-tight text-sidebar-accent-foreground whitespace-nowrap group-data-[collapsible=icon]:hidden">
-            GPTrainer
+            Dux
           </span>
         </Link>
       </SidebarHeader>

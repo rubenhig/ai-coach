@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GPTrainer",
-  description: "Planifica tus entrenamientos con IA",
+  title: "Dux",
+  description: "Tu coach personal de resistencia, potenciado por IA",
 };
 
 export default function RootLayout({
