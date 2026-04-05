@@ -21,15 +21,6 @@ export default function LandingPage() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 z-10 text-center">
-        <div className="mb-8">
-          <Image
-            src="/powered-by-strava.png"
-            alt="Powered by Strava"
-            width={146}
-            height={15}
-          />
-        </div>
-
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-muted-foreground">
           Tu Coach Personal de <br />
           Resistencia,{' '}
@@ -69,8 +60,8 @@ export default function LandingPage() {
         <Image
           src="/powered-by-strava.png"
           alt="Powered by Strava"
-          width={183}
-          height={19}
+          width={88}
+          height={30}
         />
       </footer>
     </main>
