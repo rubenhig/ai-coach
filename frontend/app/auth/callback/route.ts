@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
 
   const { token } = await exchangeRes.json() as { token: string }
 
-  const response = NextResponse.redirect(new URL('/dashboard', req.url))
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000'
+  const proto = req.headers.get('x-forwarded-proto') || 'http'
+  const response = NextResponse.redirect(new URL('/dashboard', `${proto}://${host}`))
   response.cookies.set('session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
