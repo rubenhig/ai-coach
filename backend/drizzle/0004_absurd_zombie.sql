@@ -25,7 +25,7 @@ ALTER TABLE "activity_laps" DROP CONSTRAINT "activity_laps_activity_id_fk";
 --> statement-breakpoint
 ALTER TABLE "athlete_zones" DROP CONSTRAINT "athlete_zones_user_id_fk";
 --> statement-breakpoint
-DROP INDEX "activity_streams_activity_id_unique";--> statement-breakpoint
+DROP INDEX IF EXISTS "activity_streams_activity_id_unique";--> statement-breakpoint
 ALTER TABLE "coach_messages" ADD CONSTRAINT "coach_messages_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "goals" ADD CONSTRAINT "goals_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "coach_messages_user_id_idx" ON "coach_messages" USING btree ("user_id");--> statement-breakpoint
