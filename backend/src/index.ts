@@ -12,8 +12,12 @@ import profileRouter from './modules/profile/index.js'
 import coachRouter from './modules/coach/index.js'
 import { startEnrichmentWorker } from './queue/enrichment-worker.js'
 import { startScheduler } from './scheduler/index.js'
+import { runMigrations } from './db/index.js'
 import logger from './lib/logger.js'
 import { env } from './lib/env.js'
+
+await runMigrations()
+logger.info('database migrations applied')
 
 type AppVariables = { userId: number }
 const app = new OpenAPIHono<{ Variables: AppVariables }>()
