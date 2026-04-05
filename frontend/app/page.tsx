@@ -57,12 +57,7 @@ export default function LandingPage() {
       </div>
 
       <footer className="z-10 py-8 flex justify-center items-center">
-        <Image
-          src="/powered-by-strava.png"
-          alt="Powered by Strava"
-          width={88}
-          height={30}
-        />
+        <p className="text-xs text-muted-foreground">Powered by <span className="text-strava font-semibold">Strava</span></p>
       </footer>
     </main>
   )

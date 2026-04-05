@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(req: NextRequest) {
-  // Borrar la cookie sobreescribiéndola con maxAge: 0 (más fiable que .delete())
-  const response = NextResponse.redirect(new URL('/', req.url))
+export async function POST(_req: NextRequest) {
+  const response = NextResponse.json({ ok: true })
   response.cookies.set('session', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
