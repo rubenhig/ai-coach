@@ -21,9 +21,13 @@ export default function LandingPage() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 z-10 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-sm text-muted-foreground mb-8">
-          <span className="w-2 h-2 rounded-full bg-strava animate-pulse" />
-          Compatible with Strava
+        <div className="mb-8">
+          <Image
+            src="/powered-by-strava.png"
+            alt="Powered by Strava"
+            width={146}
+            height={15}
+          />
         </div>
 
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-muted-foreground">
@@ -61,7 +65,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <footer className="z-10 py-4 flex justify-center">
+      <footer className="z-10 py-8 flex justify-center items-center">
         <Image
           src="/powered-by-strava.png"
           alt="Powered by Strava"
