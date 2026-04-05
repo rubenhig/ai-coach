@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Activity, Map, MessageSquare, Zap } from 'lucide-react'
 
 export default function LandingPage() {
@@ -10,8 +11,8 @@ export default function LandingPage() {
 
       <nav className="w-full px-6 py-4 flex justify-between items-center z-10 border-b border-border bg-background/50 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-strava flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+            <Zap className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-xl font-bold tracking-tight">GPTrainer</span>
         </div>
@@ -26,7 +27,7 @@ export default function LandingPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 z-10 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-sm text-muted-foreground mb-8">
           <span className="w-2 h-2 rounded-full bg-strava animate-pulse" />
-          Conectado con tus datos reales de Strava
+          Compatible with Strava
         </div>
 
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-muted-foreground">
@@ -41,14 +42,14 @@ export default function LandingPage() {
           basándose en tus datos reales.
         </p>
 
-        <Link
-          href="/auth/login"
-          className="inline-flex items-center gap-3 h-14 px-8 text-lg font-bold rounded-lg bg-strava text-white hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(252,76,2,0.3)]"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-          </svg>
-          Conectar con Strava
+        <Link href="/auth/login">
+          <Image
+            src="/connect-with-strava.png"
+            alt="Connect with Strava"
+            width={237}
+            height={48}
+            priority
+          />
         </Link>
 
         <div className="mt-8 flex flex-wrap justify-center items-center gap-6 text-sm text-muted-foreground">
@@ -63,6 +64,15 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      <footer className="z-10 py-4 flex justify-center">
+        <Image
+          src="/powered-by-strava.png"
+          alt="Powered by Strava"
+          width={183}
+          height={19}
+        />
+      </footer>
     </main>
   )
 }
