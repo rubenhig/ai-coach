@@ -17,7 +17,7 @@ const historyRoute = createRoute({
     200: {
       content: {
         'application/json': {
-          schema: z.object({ messages: z.array(z.any()), plan: z.any().nullable() }),
+          schema: z.object({ messages: z.array(z.any()), goal: z.any().nullable() }),
         },
       },
       description: 'OK',

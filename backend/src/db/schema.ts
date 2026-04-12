@@ -222,20 +222,61 @@ export const athleteZones = pgTable(
   ]
 )
 
-// Objetivos de entrenamiento del atleta
-export const goals = pgTable('goals', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  description: text('description').notNull(),    // "Hyrox el 15 de mayo en 1h15"
-  eventDate: timestamp('event_date'),
-  targetTime: text('target_time'),               // "1:15:00"
-  plan: jsonb('plan'),                           // TrainingPlan JSON
-  status: text('status').notNull().default('active'), // 'active' | 'completed' | 'cancelled'
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-})
+// ─── Dominio de entrenamiento (MVP) ───
+// Ver docs/domain/mvp.md
+
+export const goals = pgTable(
+  'goals',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    sport: text('sport').notNull(), // Taxonomía Strava: "Run", "Ride", "Swim", ...
+    targetDescription: text('target_description').notNull(),
+    targetDate: timestamp('target_date', { withTimezone: true }),
+    priority: text('priority').notNull().default('A'), // "A" | "B" | "C"
+    parentId: integer('parent_id'),
+    status: text('status').notNull().default('active'), // "active" | "completed" | "cancelled"
+    resultDescription: text('result_description'),
+    resultActivityId: integer('result_activity_id')
+      .references(() => activities.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => [
+    index('goals_user_id_idx').on(t.userId),
+    index('goals_parent_id_idx').on(t.parentId),
+    index('goals_status_idx').on(t.status),
+  ]
+)
+
+export const plannedSessions = pgTable(
+  'planned_sessions',
+  {
+    id: serial('id').primaryKey(),
+    goalId: integer('goal_id')
+      .notNull()
+      .references(() => goals.id, { onDelete: 'cascade' }),
+    date: timestamp('date', { withTimezone: true }).notNull(),
+    sport: text('sport').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    targetDuration: integer('target_duration'), // minutos
+    status: text('status').notNull().default('planned'), // "planned" | "completed" | "skipped"
+    linkedActivityId: integer('linked_activity_id')
+      .references(() => activities.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => [
+    index('planned_sessions_goal_id_idx').on(t.goalId),
+    index('planned_sessions_date_idx').on(t.date),
+    index('planned_sessions_status_idx').on(t.status),
+    index('planned_sessions_linked_activity_idx').on(t.linkedActivityId),
+  ]
+)
 
 // Historial de conversación con el coach
 export const coachMessages = pgTable(
@@ -262,12 +303,21 @@ export const usersRelations = relations(users, ({ many }) => ({
   coachMessages: many(coachMessages),
 }))
 
-export const goalsRelations = relations(goals, ({ one }) => ({
+export const goalsRelations = relations(goals, ({ one, many }) => ({
   user: one(users, { fields: [goals.userId], references: [users.id] }),
+  parent: one(goals, { fields: [goals.parentId], references: [goals.id], relationName: 'subGoals' }),
+  subGoals: many(goals, { relationName: 'subGoals' }),
+  plannedSessions: many(plannedSessions),
+  resultActivity: one(activities, { fields: [goals.resultActivityId], references: [activities.id] }),
 }))
 
 export const coachMessagesRelations = relations(coachMessages, ({ one }) => ({
   user: one(users, { fields: [coachMessages.userId], references: [users.id] }),
+}))
+
+export const plannedSessionsRelations = relations(plannedSessions, ({ one }) => ({
+  goal: one(goals, { fields: [plannedSessions.goalId], references: [goals.id] }),
+  linkedActivity: one(activities, { fields: [plannedSessions.linkedActivityId], references: [activities.id] }),
 }))
 
 export const activitiesRelations = relations(activities, ({ one, many }) => ({

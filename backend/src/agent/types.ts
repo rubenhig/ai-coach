@@ -1,30 +1,31 @@
-export type PlanSession = {
-  day: string         // "Martes"
-  type: string        // "Carrera Z2", "Fuerza funcional"
-  description: string
-  duration?: string   // "45 min"
+export type SubGoalData = {
+  name: string
+  sport: string
+  targetDescription: string
 }
 
-export type PlanPhase = {
-  name: string    // "Base aeróbica"
-  weeks: string   // "Semanas 1-3"
-  focus: string
-  sessions: PlanSession[]
+export type PlannedSessionData = {
+  date: string           // ISO date
+  sport: string          // Strava: "Run", "Ride", "Swim", ...
+  title: string
+  description?: string
+  targetDuration?: number // minutos
 }
 
-export type TrainingPlan = {
-  goal: {
-    description: string
-    eventDate: string
-    targetTime?: string
-  }
-  phases: PlanPhase[]
+export type GoalData = {
+  name: string
+  sport: string
+  targetDescription: string
+  targetDate?: string    // ISO date
+  priority?: string      // "A" | "B" | "C"
+  subGoals?: SubGoalData[]
+  sessions: PlannedSessionData[]
 }
 
 // Eventos SSE enviados al frontend
 export type CoachSSEEvent =
   | { type: 'text_delta'; delta: string }
   | { type: 'tool_start'; label: string }
-  | { type: 'plan_update'; plan: TrainingPlan }
+  | { type: 'goal_update'; goal: GoalData }
   | { type: 'done' }
   | { type: 'error'; message: string }

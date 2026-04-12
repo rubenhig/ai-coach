@@ -2,11 +2,11 @@ import { Agent } from '@mariozechner/pi-agent-core'
 import { getModel } from '@mariozechner/pi-ai'
 import { eq, asc } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { coachMessages, goals } from '../db/schema.js'
+import { coachMessages, goals, plannedSessions } from '../db/schema.js'
 import { COACH_SYSTEM_PROMPT } from './prompts/coach.js'
 import { createGetTrainingContextTool } from './tools/get-training-context.js'
-import { createUpdatePlanTool } from './tools/update-plan.js'
-import type { TrainingPlan, CoachSSEEvent } from './types.js'
+import { createUpdateGoalTool } from './tools/update-goal.js'
+import type { GoalData, CoachSSEEvent } from './types.js'
 import type { AgentMessage } from '@mariozechner/pi-agent-core'
 
 export class AgentService {
@@ -23,7 +23,7 @@ export class AgentService {
 
     const history = stored.map(r => r.data) as AgentMessage[]
 
-    let latestPlan: TrainingPlan | null = null
+    let latestGoal: GoalData | null = null
 
     const agent = new Agent({
       initialState: {
@@ -31,9 +31,9 @@ export class AgentService {
         model: getModel('openrouter', 'anthropic/claude-3.7-sonnet'),
         tools: [
           createGetTrainingContextTool(userId),
-          createUpdatePlanTool((plan) => {
-            latestPlan = plan
-            onEvent({ type: 'plan_update', plan })
+          createUpdateGoalTool((goal) => {
+            latestGoal = goal
+            onEvent({ type: 'goal_update', goal })
           }),
         ],
         messages: history,
@@ -49,13 +49,14 @@ export class AgentService {
       } else if (event.type === 'tool_execution_start') {
         const label = event.toolName === 'get_training_context'
           ? 'Analizando tu historial...'
-          : 'Actualizando el plan...'
+          : 'Actualizando objetivo...'
         await onEvent({ type: 'tool_start', label })
       }
     })
 
     await agent.prompt(userMessage)
 
+    // Persist new messages
     const newMessages = agent.state.messages.slice(history.length)
     if (newMessages.length > 0) {
       await db.insert(coachMessages).values(
@@ -63,29 +64,104 @@ export class AgentService {
       )
     }
 
-    if (latestPlan) {
-      const existing = await db.query.goals.findFirst({ where: eq(goals.userId, userId) })
-      const planDescription = (latestPlan as TrainingPlan).goal.description
-      if (existing) {
-        await db.update(goals)
-          .set({ plan: latestPlan as Record<string, unknown>, description: planDescription, updatedAt: new Date() })
-          .where(eq(goals.id, existing.id))
-      } else {
-        await db.insert(goals).values({ userId, description: planDescription, plan: latestPlan as Record<string, unknown> })
-      }
+    // Persist goal + subgoals + sessions
+    if (latestGoal) {
+      await this.persistGoal(userId, latestGoal)
     }
   }
 
-  async getHistory(userId: number): Promise<{ messages: AgentMessage[]; plan: TrainingPlan | null }> {
+  private async persistGoal(userId: number, goalData: GoalData): Promise<void> {
+    // Upsert main goal (find existing active goal or create new)
+    const existing = await db.query.goals.findFirst({
+      where: eq(goals.userId, userId),
+    })
+
+    let goalId: number
+    const goalRow = {
+      name: goalData.name,
+      sport: goalData.sport,
+      targetDescription: goalData.targetDescription,
+      targetDate: goalData.targetDate ? new Date(goalData.targetDate) : null,
+      priority: goalData.priority ?? 'A',
+      status: 'active' as const,
+      updatedAt: new Date(),
+    }
+
+    if (existing) {
+      await db.update(goals).set(goalRow).where(eq(goals.id, existing.id))
+      goalId = existing.id
+      // Clear old sub-goals and sessions (cascade will handle sessions of sub-goals)
+      await db.delete(goals).where(eq(goals.parentId, goalId))
+      await db.delete(plannedSessions).where(eq(plannedSessions.goalId, goalId))
+    } else {
+      const [inserted] = await db.insert(goals).values({ userId, ...goalRow }).returning({ id: goals.id })
+      goalId = inserted.id
+    }
+
+    // Insert sub-goals
+    if (goalData.subGoals?.length) {
+      await db.insert(goals).values(
+        goalData.subGoals.map(sg => ({
+          userId,
+          name: sg.name,
+          sport: sg.sport,
+          targetDescription: sg.targetDescription,
+          parentId: goalId,
+          priority: 'C' as const,
+          status: 'active' as const,
+        }))
+      )
+    }
+
+    // Insert planned sessions
+    if (goalData.sessions.length) {
+      await db.insert(plannedSessions).values(
+        goalData.sessions.map(s => ({
+          goalId,
+          date: new Date(s.date),
+          sport: s.sport,
+          title: s.title,
+          description: s.description ?? null,
+          targetDuration: s.targetDuration ?? null,
+          status: 'planned' as const,
+        }))
+      )
+    }
+  }
+
+  async getHistory(userId: number): Promise<{ messages: AgentMessage[]; goal: GoalData | null }> {
     const [msgs, activeGoal] = await Promise.all([
       db.select().from(coachMessages).where(eq(coachMessages.userId, userId)).orderBy(asc(coachMessages.id)),
-      db.query.goals.findFirst({ where: eq(goals.userId, userId), orderBy: asc(goals.id) }),
+      db.query.goals.findFirst({
+        where: eq(goals.userId, userId),
+        with: { subGoals: true, plannedSessions: true },
+      }),
     ])
 
-    return {
-      messages: msgs.map(m => m.data) as AgentMessage[],
-      plan: (activeGoal?.plan ?? null) as TrainingPlan | null,
+    let goal: GoalData | null = null
+    if (activeGoal) {
+      goal = {
+        name: activeGoal.name,
+        sport: activeGoal.sport,
+        targetDescription: activeGoal.targetDescription,
+        targetDate: activeGoal.targetDate?.toISOString(),
+        priority: activeGoal.priority,
+        subGoals: (activeGoal.subGoals ?? []).map(sg => ({
+          name: sg.name,
+          sport: sg.sport,
+          targetDescription: sg.targetDescription,
+        })),
+        sessions: (activeGoal.plannedSessions ?? []).map(s => ({
+          date: s.date.toISOString(),
+          sport: s.sport,
+          title: s.title,
+          description: s.description ?? undefined,
+          targetDuration: s.targetDuration ?? undefined,
+        })),
+      }
     }
+
+    return { messages: msgs.map(m => m.data) as AgentMessage[], goal }
   }
 
   async clearHistory(userId: number): Promise<void> {

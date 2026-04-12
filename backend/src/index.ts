@@ -10,6 +10,7 @@ import stravaWebhookRouter from './modules/webhooks/strava.js'
 import activitiesRouter from './modules/activities/index.js'
 import profileRouter from './modules/profile/index.js'
 import coachRouter from './modules/coach/index.js'
+import goalsRouter from './modules/goals/index.js'
 import { startEnrichmentWorker } from './queue/enrichment-worker.js'
 import { startScheduler } from './scheduler/index.js'
 import { runMigrations } from './db/index.js'
@@ -63,6 +64,7 @@ app.route('/api/auth', auth)
 app.route('/api/activities', activitiesRouter)
 app.route('/api/profile', profileRouter)
 app.route('/api/coach', coachRouter)
+app.route('/api/goals', goalsRouter)
 
 // OpenAPI + Swagger UI (solo desarrollo)
 app.doc('/openapi.json', {

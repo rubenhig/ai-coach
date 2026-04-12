@@ -36,6 +36,13 @@
       "when": 1775322063325,
       "tag": "0004_absurd_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776012875211,
+      "tag": "0005_strange_moira_mactaggert",
+      "breakpoints": true
     }
   ]
 }
