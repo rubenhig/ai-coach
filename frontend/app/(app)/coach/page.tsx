@@ -10,7 +10,7 @@ async function getHistory() {
     headers: { Cookie: `session=${session?.value}` },
     cache: 'no-store',
   })
-  if (!res.ok) return { messages: [], plan: null }
+  if (!res.ok) return { messages: [], goal: null }
   return res.json()
 }
 

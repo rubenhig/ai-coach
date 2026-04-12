@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, BarChart3, Calendar, Zap } from 'lucide-react'
+import { Activity, BarChart3, Target, Zap } from 'lucide-react'
 import { DuxIcon } from '@/components/dux-logo'
 import {
   Sidebar,
@@ -23,7 +23,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   { href: '/coach', label: 'Coach IA', icon: Zap },
   { href: '/activities', label: 'Mis Actividades', icon: Activity },
-  { href: '/plan', label: 'Plan de Entrenamiento', icon: Calendar },
+  { href: '/plan', label: 'Objetivos', icon: Target },
 ]
 
 type AppSidebarProps = {

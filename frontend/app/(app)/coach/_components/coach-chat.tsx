@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Send, Zap, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import PlanPanel, { type TrainingPlan } from './plan-panel'
+import GoalPanel, { type GoalData } from './goal-panel'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -14,13 +14,13 @@ type Message = {
 type CoachSSEEvent =
   | { type: 'text_delta'; delta: string }
   | { type: 'tool_start'; label: string }
-  | { type: 'plan_update'; plan: TrainingPlan }
+  | { type: 'goal_update'; goal: GoalData }
   | { type: 'done' }
   | { type: 'error'; message: string }
 
 type InitialData = {
   messages: { role: string; content: unknown }[]
-  plan: TrainingPlan | null
+  goal: GoalData | null
 }
 
 export default function CoachChat({ initial }: { initial: InitialData }) {
@@ -32,7 +32,7 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
         content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       }))
   )
-  const [plan, setPlan] = useState<TrainingPlan | null>(initial.plan)
+  const [goal, setGoal] = useState<GoalData | null>(initial.goal)
   const [input, setValue] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [toolLabel, setToolLabel] = useState<string | null>(null)
@@ -92,8 +92,8 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
               setToolLabel(null)
             } else if (event.type === 'tool_start') {
               setToolLabel(event.label)
-            } else if (event.type === 'plan_update') {
-              setPlan(event.plan)
+            } else if (event.type === 'goal_update') {
+              setGoal(event.goal)
             } else if (event.type === 'done') {
               break
             } else if (event.type === 'error') {
@@ -123,7 +123,7 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
   async function clearHistory() {
     await fetch('/api/coach/history', { method: 'DELETE' })
     setMessages([])
-    setPlan(null)
+    setGoal(null)
   }
 
   return (
@@ -228,9 +228,9 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
         </div>
       </div>
 
-      {/* Plan column */}
+      {/* Goal column */}
       <div className="flex-1 overflow-hidden">
-        <PlanPanel plan={plan} isThinking={isStreaming && plan !== null} />
+        <GoalPanel goal={goal} isThinking={isStreaming && goal !== null} />
       </div>
     </div>
   )
