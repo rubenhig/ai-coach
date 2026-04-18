@@ -3,27 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, Zap, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import GoalPanel, { type GoalData } from './goal-panel'
+import GoalPanel from './goal-panel'
+import type { GoalView, CoachSSEEvent, CoachHistory } from './types'
 
 type Message = {
   role: 'user' | 'assistant'
   content: string
 }
 
-type CoachSSEEvent =
-  | { type: 'text_delta'; delta: string }
-  | { type: 'tool_start'; label: string }
-  | { type: 'goal_update'; goal: GoalData }
-  | { type: 'done' }
-  | { type: 'error'; message: string }
-
-type InitialData = {
-  messages: { role: string; content: unknown }[]
-  goal: GoalData | null
-}
-
-export default function CoachChat({ initial }: { initial: InitialData }) {
+export default function CoachChat({ initial }: { initial: CoachHistory }) {
   const [messages, setMessages] = useState<Message[]>(() =>
     initial.messages
       .filter(m => m.role === 'user' || m.role === 'assistant')
@@ -32,7 +20,7 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
         content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       }))
   )
-  const [goal, setGoal] = useState<GoalData | null>(initial.goal)
+  const [goals, setGoals] = useState<GoalView[]>(initial.goals ?? [])
   const [input, setValue] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [toolLabel, setToolLabel] = useState<string | null>(null)
@@ -44,6 +32,27 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages, isStreaming])
+
+  // Upsert a goal by ID into the goals array
+  function upsertGoal(updated: GoalView) {
+    setGoals(prev => {
+      const idx = prev.findIndex(g => g.id === updated.id)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = updated
+        return next
+      }
+      return [...prev, updated]
+    })
+  }
+
+  // Merge sessions into a goal
+  function mergeSessions(goalId: number, sessions: GoalView['sessions']) {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== goalId) return g
+      return { ...g, sessions }
+    }))
+  }
 
   async function sendMessage() {
     const text = input.trim()
@@ -82,22 +91,40 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
           if (!line.startsWith('data: ')) continue
           try {
             const event = JSON.parse(line.slice(6)) as CoachSSEEvent
-            if (event.type === 'text_delta') {
-              assistantText += event.delta
-              setMessages(prev => {
-                const next = [...prev]
-                next[next.length - 1] = { role: 'assistant', content: assistantText }
-                return next
-              })
-              setToolLabel(null)
-            } else if (event.type === 'tool_start') {
-              setToolLabel(event.label)
-            } else if (event.type === 'goal_update') {
-              setGoal(event.goal)
-            } else if (event.type === 'done') {
-              break
-            } else if (event.type === 'error') {
-              throw new Error(event.message)
+
+            switch (event.type) {
+              case 'text_delta':
+                assistantText += event.delta
+                setMessages(prev => {
+                  const next = [...prev]
+                  next[next.length - 1] = { role: 'assistant', content: assistantText }
+                  return next
+                })
+                setToolLabel(null)
+                break
+              case 'tool_start':
+                setToolLabel(event.label)
+                break
+              case 'goal_update':
+                upsertGoal(event.goal)
+                break
+              case 'sessions_update':
+                mergeSessions(event.goalId, event.sessions)
+                break
+              case 'session_update':
+                // Single session update — update within its goal
+                setGoals(prev => prev.map(g => {
+                  if (g.id !== event.session.goalId) return g
+                  return {
+                    ...g,
+                    sessions: g.sessions.map(s => s.id === event.session.id ? event.session : s),
+                  }
+                }))
+                break
+              case 'done':
+                break
+              case 'error':
+                throw new Error(event.message)
             }
           } catch {
             // skip malformed SSE line
@@ -123,7 +150,7 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
   async function clearHistory() {
     await fetch('/api/coach/history', { method: 'DELETE' })
     setMessages([])
-    setGoal(null)
+    setGoals([])
   }
 
   return (
@@ -174,7 +201,7 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
                   <Zap className="w-3.5 h-3.5 text-primary" />
                 </div>
               )}
-              <div className={`rounded-2xl px-3.5 py-2.5 text-sm max-w-[85%] leading-relaxed ${
+              <div className={`rounded-2xl px-3.5 py-2.5 text-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
                 msg.role === 'user'
                   ? 'bg-primary/10 border border-primary/20 rounded-tr-sm'
                   : 'bg-muted/50 border border-border/50 rounded-tl-sm'
@@ -230,7 +257,7 @@ export default function CoachChat({ initial }: { initial: InitialData }) {
 
       {/* Goal column */}
       <div className="flex-1 overflow-hidden">
-        <GoalPanel goal={goal} isThinking={isStreaming && goal !== null} />
+        <GoalPanel goals={goals} isThinking={isStreaming} />
       </div>
     </div>
   )

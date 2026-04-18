@@ -2,7 +2,6 @@
 
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import AppSidebar from './app-sidebar'
-import ChatPanel from './chat-panel'
 import type { AppUser } from '../layout'
 
 type DashboardShellProps = {

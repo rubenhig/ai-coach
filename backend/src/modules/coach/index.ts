@@ -17,7 +17,10 @@ const historyRoute = createRoute({
     200: {
       content: {
         'application/json': {
-          schema: z.object({ messages: z.array(z.any()), goal: z.any().nullable() }),
+          schema: z.object({
+            messages: z.array(z.record(z.string(), z.unknown())),
+            goals: z.array(z.record(z.string(), z.unknown())),
+          }),
         },
       },
       description: 'OK',
@@ -27,7 +30,7 @@ const historyRoute = createRoute({
 
 coachRouter.openapi(historyRoute, async (c) => {
   const result = await agentService.getHistory(c.get('userId'))
-  return c.json(result, 200 as const)
+  return c.json(result as any, 200 as const)
 })
 
 // --- POST /coach/chat ---
@@ -41,10 +44,17 @@ coachRouter.post('/chat', async (c) => {
   return streamSSE(c, async (stream) => {
     const send = (event: object) => stream.writeSSE({ data: JSON.stringify(event) })
 
+    // Create abort controller for clean cancellation on client disconnect
+    const abortController = new AbortController()
+    stream.onAbort(() => abortController.abort())
+
     try {
-      await agentService.runCoachSession(userId, userMessage, send)
-      await send({ type: 'done' })
+      await agentService.runCoachSession(userId, userMessage, send, abortController.signal)
+      if (!abortController.signal.aborted) {
+        await send({ type: 'done' })
+      }
     } catch (err) {
+      if (abortController.signal.aborted) return
       const message = err instanceof Error ? err.message : 'Unknown error'
       console.error('[coach] stream error:', err)
       await send({ type: 'error', message })
